@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Terminal syaaikoo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --terminal-bg: #1a1a1a;
+            --text-color: #d9d9d9;
+            --prompt-color: #50fa7b;
+            --user-input-color: #8be9fd;
+            --error-color: #ff5555;
+            --success-color: #50fa7b;
+            --warning-color: #f1fa8c;
+            --info-color: #bd93f9;
+            --link-color: #8be9fd;
+            --selection-bg: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            touch-action: manipulation;
+        }
+
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+            background-color: var(--terminal-bg);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            background-color: #333;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            user-select: none;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close {
+            background-color: #ff5f56;
+        }
+
+        .terminal-button.minimize {
+            background-color: #ffbd2e;
+        }
+
+        .terminal-button.maximize {
+            background-color: #27c93f;
+        }
+
+        .terminal-title {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .terminal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-body::-webkit-scrollbar-track {
+            background: var(--terminal-bg);
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .terminal-line {
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .terminal-prompt {
+            color: var(--prompt-color);
+        }
+
+        .terminal-user-input {
+            color: var(--user-input-color);
+        }
+
+        .terminal-error {
+            color: var(--error-color);
+        }
+
+        .terminal-success {
+            color: var(--success-color);
+        }
+
+        .terminal-warning {
+            color: var(--warning-color);
+        }
+
+        .terminal-info {
+            color: var(--info-color);
+        }
+
+        .terminal-link {
+            color: var(--link-color);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .terminal-input-prompt {
+            color: var(--prompt-color);
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        .terminal-input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--user-input-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            outline: none;
+            caret-color: var(--text-color);
+        }
+
+        .terminal-input-field::selection {
+            background-color: var(--selection-bg);
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loading-text {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            color: var(--text-color);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--prompt-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: var(--text-color);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .typing {
+            display: inline-block;
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typing 3s steps(40, end);
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        .help-table {
+            border-collapse: collapse;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .help-table th, .help-table td {
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+
+        .help-table th {
+            color: var(--info-color);
+        }
+
+        .help-table tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .ascii-art {
+            font-family: monospace;
+            white-space: pre;
+            line-height: 1.2;
+            color: var(--info-color);
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background-color: #444;
+            margin: 10px 0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background-color: var(--terminal-bg);
+            border-left: 4px solid var(--info-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .notification.success {
+            border-left-color: var(--success-color);
+        }
+
+        .notification.error {
+            border-left-color: var(--error-color);
+        }
+
+        .notification.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .file-content {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 3px solid var(--info-color);
+        }
+
+        .autocomplete {
+            position: absolute;
+            background-color: var(--terminal-bg);
+            border: 1px solid #444;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .autocomplete-item:hover, .autocomplete-item.selected {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .matrix-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.05;
+        }
+
+        .fullscreen-button {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: var(--terminal-bg);
+            color: var(--text-color);
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 100;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .fullscreen-button:hover {
+            opacity: 1;
+        }
+
+        /* Responsive styles */
+        @media (min-width: 1200px) {
+            .terminal-container {
+                max-width: 1000px;
+                height: 90vh;
+                margin: auto;
+                border-radius: 8px;
+                margin-top: 5vh;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .terminal-container {
+                max-width: 90%;
+                height: 90vh;
+                margin: auto;
+                border-radius: 8px;
+                margin-top: 5vh;
+            }
+        }
+
+        @media (max-width: 767px) {
+            body {
+                font-size: 13px;
+            }
+
+            .terminal-container {
+                padding: 5px;
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+
+            .terminal-body {
+                padding: 5px;
+            }
+
+            .terminal-input-prompt, .terminal-input-field {
+                font-size: 13px;
+            }
+
+            .help-table th, .help-table td {
+                padding: 4px 6px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                font-size: 12px;
+            }
+
+            .terminal-input-prompt, .terminal-input-field {
+                font-size: 12px;
+            }
+
+            .help-table th, .help-table td {
+                padding: 3px 4px;
+                font-size: 11px;
+            }
+
+            .ascii-art {
+                font-size: 8px;
+                line-height: 1;
+            }
+        }
+
+        /* Orientasi landscape pada perangkat mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .ascii-art {
+                font-size: 8px;
+                line-height: 1;
+            }
+            
+            .terminal-body {
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Booting system...</div>
+    </div>
+
+    <canvas class="matrix-effect" id="matrix-canvas"></canvas>
+
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">syaaikoo@terminal: ~/contact</div>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <!-- Terminal content will be added here by JavaScript -->
+        </div>
+        <div class="terminal-input-line">
+            <div class="terminal-input-prompt" id="terminal-prompt">syaaikoo@terminal:~$</div>
+            <input type="text" class="terminal-input-field" id="terminal-input" autocomplete="off" autofocus>
+        </div>
+        <div class="autocomplete" id="autocomplete"></div>
+    </div>
+
+    <button class="fullscreen-button" id="fullscreen-button">Fullscreen</button>
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Nomor WhatsApp yang dienkripsi dengan Base64
+        const encodedNumber = "NjI4MTU1MzM2Mjc5NQ==";
+        
+        // Terminal state
+        const terminalState = {
+            currentDirectory: '~',
+            user: 'syaaikoo',
+            hostname: 'terminal',
+            commandHistory: [],
+            historyIndex: -1,
+            files: {
+                '~': {
+                    type: 'directory',
+                    content: ['README.md', 'contact.sh', '.hidden', 'games', 'puzzles']
+                },
+                '~/README.md': {
+                    type: 'file',
+                    content: 'Selamat datang di terminal syaaikoo!\n\nGunakan perintah "help" untuk melihat daftar perintah yang tersedia.\nUntuk menghubungi syaaikoo, jalankan script "contact.sh".\n\nHave fun exploring!'
+                },
+                '~/contact.sh': {
+                    type: 'file',
+                    executable: true,
+                    locked: true,
+                    content: '#!/bin/bash\n\n# Script ini akan menghubungkan Anda dengan syaaikoo via WhatsApp\n# Namun Anda perlu menyelesaikan beberapa tantangan terlebih dahulu\n\necho "Menghubungkan ke WhatsApp..."\nsleep 2\necho "Redirecting..."\n\n# Redirect to WhatsApp'
+                },
+                '~/.hidden': {
+                    type: 'directory',
+                    content: ['.key.txt', '.hint.md']
+                },
+                '~/.hidden/.key.txt': {
+                    type: 'file',
+                    content: 'c3lhYWlrb28tZmluYWw='
+                },
+                '~/.hidden/.hint.md': {
+                    type: 'file',
+                    content: 'Petunjuk untuk membuka contact.sh:\n\n1. Anda perlu menemukan kunci untuk membuka file contact.sh\n2. Kunci tersebut tersembunyi di suatu tempat dalam sistem\n3. Gunakan perintah "decode" untuk mendekripsi kunci yang Anda temukan\n4. Jalankan "unlock contact.sh [kunci]" untuk membuka file tersebut'
+                },
+                '~/games': {
+                    type: 'directory',
+                    content: ['riddle.sh', 'hangman.sh']
+                },
+                '~/games/riddle.sh': {
+                    type: 'file',
+                    executable: true,
+                    content: '#!/bin/bash\n\n# Teka-teki sederhana\necho "Teka-teki:"\necho "Aku selalu berlari tetapi tidak pernah berjalan,"\necho "Aku sering bergumam tetapi tidak pernah berbicara,"\necho "Aku memiliki tempat tidur tetapi tidak pernah tidur,"\necho "Aku memiliki mulut tetapi tidak pernah makan."\necho "Apa aku?"\n\n# Jawaban: sungai'
+                },
+                '~/games/hangman.sh': {
+                    type: 'file',
+                    executable: true,
+                    content: '#!/bin/bash\n\n# Game hangman sederhana\necho "Permainan Hangman"\necho "Tebak kata: _ _ _ _ _ _ _ _"\necho "Petunjuk: Ini adalah nama aplikasi pesan yang populer"\n\n# Jawaban: whatsapp'
+                },
+                '~/puzzles': {
+                    type: 'directory',
+                    content: ['puzzle1.txt', 'puzzle2.txt', 'puzzle3.txt']
+                },
+                '~/puzzles/puzzle1.txt': {
+                    type: 'file',
+                    content: 'Puzzle #1:\nSusun kata-kata berikut untuk membentuk pesan rahasia:\n\n"adalah melalui WhatsApp syaaikoo pesan aman"\n\nJawaban yang benar akan memberikan petunjuk untuk puzzle berikutnya.'
+                },
+                '~/puzzles/puzzle2.txt': {
+                    type: 'file',
+                    content: 'Puzzle #2:\nDekripsi kode berikut (base64):\n\nYmFzZTY0IGFkYWxhaCBtZXRvZGUgZW5jb2Rpbmc=\n\nTerjemahkan hasilnya ke Bahasa Indonesia untuk mendapatkan petunjuk selanjutnya.'
+                },
+                '~/puzzles/puzzle3.txt': {
+                    type: 'file',
+                    content: 'Puzzle #3:\nTemukan file tersembunyi yang berisi kunci untuk membuka contact.sh.\nPetunjuk: File tersebut berada di direktori tersembunyi.\n\nGunakan perintah "ls -a" untuk melihat file tersembunyi.'
+                }
+            },
+            completedChallenges: {
+                riddle: false,
+                hangman: false,
+                puzzle1: false,
+                puzzle2: false,
+                puzzle3: false
+            },
+            unlockProgress: 0
+        };
+
+        // Available commands
+        const commands = {
+            'help': {
+                description: 'Menampilkan daftar perintah yang tersedia',
+                usage: 'help [command]'
+            },
+            'ls': {
+                description: 'Menampilkan daftar file dan direktori',
+                usage: 'ls [-a] [path]'
+            },
+            'cd': {
+                description: 'Berpindah direktori',
+                usage: 'cd [path]'
+            },
+            'cat': {
+                description: 'Menampilkan isi file',
+                usage: 'cat [file]'
+            },
+            'clear': {
+                description: 'Membersihkan layar terminal',
+                usage: 'clear'
+            },
+            'echo': {
+                description: 'Menampilkan teks',
+                usage: 'echo [text]'
+            },
+            'pwd': {
+                description: 'Menampilkan direktori saat ini',
+                usage: 'pwd'
+            },
+            'whoami': {
+                description: 'Menampilkan nama pengguna saat ini',
+                usage: 'whoami'
+            },
+            'date': {
+                description: 'Menampilkan tanggal dan waktu saat ini',
+                usage: 'date'
+            },
+            'history': {
+                description: 'Menampilkan riwayat perintah',
+                usage: 'history'
+            },
+            'decode': {
+                description: 'Mendekode string base64',
+                usage: 'decode [string]'
+            },
+            'unlock': {
+                description: 'Membuka file yang terkunci',
+                usage: 'unlock [file] [key]'
+            },
+            'run': {
+                description: 'Menjalankan file executable',
+                usage: 'run [file]'
+            },
+            'answer': {
+                description: 'Menjawab teka-teki atau pertanyaan',
+                usage: 'answer [question] [answer]'
+            },
+            'hint': {
+                description: 'Mendapatkan petunjuk untuk tantangan saat ini',
+                usage: 'hint'
+            },
+            'progress': {
+                description: 'Menampilkan kemajuan dalam menyelesaikan tantangan',
+                usage: 'progress'
+            },
+            'contact': {
+                description: 'Menghubungi syaaikoo via WhatsApp (perlu membuka contact.sh terlebih dahulu)',
+                usage: 'contact'
+            },
+            'exit': {
+                description: 'Keluar dari terminal',
+                usage: 'exit'
+            },
+            'fullscreen': {
+                description: 'Mengaktifkan mode layar penuh',
+                usage: 'fullscreen'
+            }
+        };
+
+        // Terminal elements
+        const terminalBody = document.getElementById('terminal-body');
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalPrompt = document.getElementById('terminal-prompt');
+        const autocompleteElement = document.getElementById('autocomplete');
+        const notification = document.getElementById('notification');
+        const loadingScreen = document.getElementById('loading-screen');
+        const fullscreenButton = document.getElementById('fullscreen-button');
+
+        // Deteksi perangkat mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // Function to toggle fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && 
+                !document.mozFullScreenElement && 
+                !document.webkitFullscreenElement && 
+                !document.msFullscreenElement) {
+                // Masuk ke mode fullscreen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+                }
+                fullscreenButton.textContent = "Exit Fullscreen";
+            } else {
+                // Keluar dari mode fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                fullscreenButton.textContent = "Fullscreen";
+            }
+        }
+
+        // Function to show loading screen
+        function showLoadingScreen() {
+            // Fallback timer to ensure loading screen doesn't get stuck
+            setTimeout(() => {
+                hideLoadingScreen();
+            }, 3000);
+        }
+
+        // Function to hide loading screen
+        function hideLoadingScreen() {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                initializeTerminal();
+                
+                // Otomatis fullscreen pada perangkat mobile
+                if (isMobile) {
+                    setTimeout(() => {
+                        toggleFullscreen();
+                        fullscreenButton.classList.add('hidden');
+                    }, 1000);
+                }
+            }, 500);
+        }
+
+        // Function to initialize terminal
+        function initializeTerminal() {
+            // Sesuaikan ukuran ASCII art berdasarkan lebar layar
+            const asciiArtSize = window.innerWidth < 480 ? 'small' : 'normal';
+            
+            addLine('', 'terminal-line');
+            
+            if (asciiArtSize === 'small') {
+                // ASCII art yang lebih kecil untuk layar kecil
+                addLine('  ___ _  _ ___ ___ ___ _  _  ___ ___  ', 'ascii-art');
+                addLine(' / __| || | _ \\ _ \\ __| |/ / / _ \\ _ \\ ', 'ascii-art');
+                addLine(' \\__ \\ >< |  _/   / _|| | < | (_) |   /', 'ascii-art');
+                addLine(' |___/_||_|_| |_|_\\___|_|\\_\\ \\___/|_|_\\', 'ascii-art');
+            } else {
+                // ASCII art normal untuk layar besar
+                addLine('███████╗██╗   ██╗ █████╗  █████╗ ██╗██╗  ██╗ ██████╗  ██████╗', 'ascii-art');
+                addLine('██╔════╝╚██╗ ██╔╝██╔══██╗██╔══██╗██║██║ ██╔╝██╔═══██╗██╔═══██╗', 'ascii-art');
+                addLine('███████╗ ╚████╔╝ ███████║███████║██║█████╔╝ ██║   ██║██║   ██║', 'ascii-art');
+                addLine('╚════██║  ╚██╔╝  ██╔══██║██╔══██║██║██╔═██╗ ██║   ██║██║   ██║', 'ascii-art');
+                addLine('███████║   ██║   ██║  ██║██║  ██║██║██║  ██╗╚██████╔╝╚██████╔╝', 'ascii-art');
+                addLine('╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ', 'ascii-art');
+            }
+            
+            addLine('', 'terminal-line');
+            addLine('Terminal v1.0.0 - © ' + new Date().getFullYear() + ' syaaikoo', 'terminal-info');
+            addLine('Ketik "help" untuk melihat daftar perintah yang tersedia.', 'terminal-line');
+            addLine('', 'terminal-line');
+            
+            updatePrompt();
+            
+            // Focus on input
+            terminalInput.focus();
+            
+            // Add event listeners
+            terminalInput.addEventListener('keydown', handleInputKeydown);
+            document.addEventListener('click', () => terminalInput.focus());
+            
+            // Tambahkan event listener untuk tombol fullscreen
+            fullscreenButton.addEventListener('click', toggleFullscreen);
+            
+            // Tambahkan event listener untuk perubahan orientasi
+            window.addEventListener('resize', handleResize);
+            
+            // Tambahkan event listener untuk mendeteksi perubahan fullscreen
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        }
+
+        // Function to handle resize
+        function handleResize() {
+            // Sesuaikan ukuran terminal berdasarkan ukuran layar
+            setupMatrixEffect();
+            
+            // Focus kembali ke input
+            terminalInput.focus();
+        }
+
+        // Function to handle fullscreen change
+        function handleFullscreenChange() {
+            if (document.fullscreenElement || 
+                document.webkitFullscreenElement || 
+                document.mozFullScreenElement || 
+                document.msFullscreenElement) {
+                fullscreenButton.textContent = "Exit Fullscreen";
+            } else {
+                fullscreenButton.textContent = "Fullscreen";
+            }
+            
+            // Focus kembali ke input
+            terminalInput.focus();
+        }
+
+        // Function to add a line to the terminal
+        function addLine(text, className = 'terminal-line') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.innerHTML = text;
+            terminalBody.appendChild(line);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        // Function to update the prompt
+        function updatePrompt() {
+            terminalPrompt.textContent = `${terminalState.user}@${terminalState.hostname}:${terminalState.currentDirectory}$`;
+        }
+
+        // Function to handle input keydown
+        function handleInputKeydown(e) {
+            // Handle autocomplete
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                handleTabCompletion();
+                return;
+            }
+            
+            // Hide autocomplete on any other key
+            autocompleteElement.style.display = 'none';
+            
+            // Handle command history navigation
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateHistory(-1);
+                return;
+            }
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateHistory(1);
+                return;
+            }
+            
+            // Handle command execution
+            if (e.key === 'Enter') {
+                const command = terminalInput.value.trim();
+                
+                if (command) {
+                    // Add command to history
+                    terminalState.commandHistory.unshift(command);
+                    terminalState.historyIndex = -1;
+                    
+                    // Display command
+                    addLine(`<span class="terminal-input-prompt">${terminalPrompt.textContent}</span> <span class="terminal-user-input">${escapeHtml(command)}</span>`, 'terminal-line');
+                    
+                    // Execute command
+                    executeCommand(command);
+                    
+                    // Clear input
+                    terminalInput.value = '';
+                }
+            }
+        }
+
+        // Function to handle tab completion
+        function handleTabCompletion() {
+            const input = terminalInput.value;
+            const args = input.split(' ');
+            
+            // Command completion
+            if (args.length === 1) {
+                const partialCommand = args[0];
+                const matchingCommands = Object.keys(commands).filter(cmd => cmd.startsWith(partialCommand));
+                
+                if (matchingCommands.length === 1) {
+                    terminalInput.value = matchingCommands[0] + ' ';
+                } else if (matchingCommands.length > 1) {
+                    showAutocomplete(matchingCommands);
+                }
+            }
+            // File/directory completion
+            else if (args.length === 2) {
+                const command = args[0];
+                const partialPath = args[1];
+                
+                if (['ls', 'cd', 'cat', 'run', 'unlock'].includes(command)) {
+                    const currentDir = resolveDirectory(terminalState.currentDirectory);
+                    const files = getFilesInDirectory(currentDir);
+                    
+                    const matchingFiles = files.filter(file => file.startsWith(partialPath));
+                    
+                    if (matchingFiles.length === 1) {
+                        terminalInput.value = `${command} ${matchingFiles[0]}`;
+                    } else if (matchingFiles.length > 1) {
+                        showAutocomplete(matchingFiles, command + ' ');
+                    }
+                }
+            }
+        }
+
+        // Function to show autocomplete suggestions
+        function showAutocomplete(suggestions, prefix = '') {
+            autocompleteElement.innerHTML = '';
+            
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = suggestion;
+                item.addEventListener('click', () => {
+                    terminalInput.value = prefix + suggestion;
+                    autocompleteElement.style.display = 'none';
+                    terminalInput.focus();
+                });
+                autocompleteElement.appendChild(item);
+            });
+            
+            // Position the autocomplete element
+            const rect = terminalInput.getBoundingClientRect();
+            autocompleteElement.style.top = `${rect.bottom}px`;
+            autocompleteElement.style.left = `${rect.left}px`;
+            autocompleteElement.style.display = 'block';
+        }
+
+        // Function to navigate command history
+        function navigateHistory(direction) {
+            const historyLength = terminalState.commandHistory.length;
+            
+            if (historyLength === 0) return;
+            
+            terminalState.historyIndex += direction;
+            
+            if (terminalState.historyIndex < 0) {
+                terminalState.historyIndex = -1;
+                terminalInput.value = '';
+                return;
+            }
+            
+            if (terminalState.historyIndex >= historyLength) {
+                terminalState.historyIndex = historyLength - 1;
+            }
+            
+            terminalInput.value = terminalState.commandHistory[terminalState.historyIndex];
+            
+            // Move cursor to end of input
+            setTimeout(() => {
+                terminalInput.selectionStart = terminalInput.selectionEnd = terminalInput.value.length;
+            }, 0);
+        }
+
+        // Function to execute a command
+        function executeCommand(commandString) {
+            const args = commandString.split(' ');
+            const command = args[0].toLowerCase();
+            
+            switch (command) {
+                case 'help':
+                    handleHelp(args.slice(1));
+                    break;
+                case 'ls':
+                    handleLs(args.slice(1));
+                    break;
+                case 'cd':
+                    handleCd(args.slice(1));
+                    break;
+                case 'cat':
+                    handleCat(args.slice(1));
+                    break;
+                case 'clear':
+                    handleClear();
+                    break;
+                case 'echo':
+                    handleEcho(args.slice(1));
+                    break;
+                case 'pwd':
+                    handlePwd();
+                    break;
+                case 'whoami':
+                    handleWhoami();
+                    break;
+                case 'date':
+                    handleDate();
+                    break;
+                case 'history':
+                    handleHistory();
+                    break;
+                case 'decode':
+                    handleDecode(args.slice(1));
+                    break;
+                case 'unlock':
+                    handleUnlock(args.slice(1));
+                    break;
+                case 'run':
+                    handleRun(args.slice(1));
+                    break;
+                case 'answer':
+                    handleAnswer(args.slice(1));
+                    break;
+                case 'hint':
+                    handleHint();
+                    break;
+                case 'progress':
+                    handleProgress();
+                    break;
+                case 'contact':
+                    handleContact();
+                    break;
+                case 'fullscreen':
+                    toggleFullscreen();
+                    break;
+                case 'exit':
+                    handleExit();
+                    break;
+                default:
+                    addLine(`Command not found: ${command}. Type 'help' for a list of available commands.`, 'terminal-error');
+            }
+        }
+
+        // Command handlers
+        function handleHelp(args) {
+            if (args.length === 0) {
+                addLine('Daftar perintah yang tersedia:', 'terminal-info');
+                addLine('<table class="help-table"><tr><th>Perintah</th><th>Deskripsi</th></tr>' +
+                    Object.entries(commands).map(([cmd, info]) => 
+                        `<tr><td>${cmd}</td><td>${info.description}</td></tr>`
+                    ).join('') +
+                    '</table>', 'terminal-line');
+                addLine('Ketik "help [perintah]" untuk informasi lebih lanjut tentang perintah tertentu.', 'terminal-line');
+            } else {
+                const command = args[0].toLowerCase();
+                if (commands[command]) {
+                    addLine(`<strong>${command}</strong>: ${commands[command].description}`, 'terminal-info');
+                    addLine(`Penggunaan: ${commands[command].usage}`, 'terminal-line');
+                } else {
+                    addLine(`Perintah tidak ditemukan: ${command}`, 'terminal-error');
+                }
+            }
+        }
+
+        function handleLs(args) {
+            let showHidden = false;
+            let targetPath = terminalState.currentDirectory;
+            
+            // Parse arguments
+            for (const arg of args) {
+                if (arg === '-a') {
+                    showHidden = true;
+                } else if (!arg.startsWith('-')) {
+                    targetPath = resolvePath(arg);
+                }
+            }
+            
+            const resolvedPath = resolveDirectory(targetPath);
+            const directory = terminalState.files[resolvedPath];
+            
+            if (!directory || directory.type !== 'directory') {
+                addLine(`ls: cannot access '${targetPath}': No such directory`, 'terminal-error');
+                return;
+            }
+            
+            const files = directory.content.filter(file => showHidden || !file.startsWith('.'));
+            
+            if (files.length === 0) {
+                addLine('(empty directory)', 'terminal-line');
+                return;
+            }
+            
+            const fileList = files.map(file => {
+                const filePath = `${resolvedPath}/${file}`.replace(/\/+/g, '/');
+                const fileObj = terminalState.files[filePath];
+                
+                if (fileObj && fileObj.type === 'directory') {
+                    return `<span style="color: var(--info-color);">${file}/</span>`;
+                } else if (fileObj && fileObj.executable) {
+                    return `<span style="color: var(--success-color);">${file}*</span>`;
+                } else {
+                    return file;
+                }
+            }).join('  ');
+            
+            addLine(fileList, 'terminal-line');
+        }
+
+        function handleCd(args) {
+            if (args.length === 0) {
+                terminalState.currentDirectory = '~';
+                updatePrompt();
+                return;
+            }
+            
+            const targetPath = resolvePath(args[0]);
+            const resolvedPath = resolveDirectory(targetPath);
+            
+            if (!terminalState.files[resolvedPath]) {
+                addLine(`cd: ${args[0]}: No such directory`, 'terminal-error');
+                return;
+            }
+            
+            if (terminalState.files[resolvedPath].type !== 'directory') {
+                addLine(`cd: ${args[0]}: Not a directory`, 'terminal-error');
+                return;
+            }
+            
+            terminalState.currentDirectory = targetPath;
+            updatePrompt();
+        }
+
+        function handleCat(args) {
+            if (args.length === 0) {
+                addLine('Usage: cat [file]', 'terminal-error');
+                return;
+            }
+            
+            const filePath = resolvePath(args[0]);
+            const file = terminalState.files[filePath];
+            
+            if (!file) {
+                addLine(`cat: ${args[0]}: No such file or directory`, 'terminal-error');
+                return;
+            }
+            
+            if (file.type !== 'file') {
+                addLine(`cat: ${args[0]}: Is a directory`, 'terminal-error');
+                return;
+            }
+            
+            addLine(`<div class="file-content">${file.content.replace(/\n/g, '<br>')}</div>`, 'terminal-line');
+            
+            // Check if this is a puzzle file and mark as read
+            if (filePath.includes('puzzles/puzzle1.txt')) {
+                showNotification('Petunjuk: Jawaban puzzle ini dapat diberikan dengan perintah "answer puzzle1 [jawaban]"', 'info');
+            } else if (filePath.includes('puzzles/puzzle2.txt')) {
+                showNotification('Petunjuk: Gunakan perintah "decode" untuk mendekode string base64', 'info');
+            } else if (filePath.includes('puzzles/puzzle3.txt')) {
+                showNotification('Petunjuk: Direktori tersembunyi dimulai dengan tanda titik (.)', 'info');
+            }
+        }
+
+        function handleClear() {
+            terminalBody.innerHTML = '';
+        }
+
+        function handleEcho(args) {
+            addLine(args.join(' '), 'terminal-line');
+        }
+
+        function handlePwd() {
+            addLine(resolveDirectory(terminalState.currentDirectory), 'terminal-line');
+        }
+
+        function handleWhoami() {
+            addLine(terminalState.user, 'terminal-line');
+        }
+
+        function handleDate() {
+            addLine(new Date().toString(), 'terminal-line');
+        }
+
+        function handleHistory() {
+            if (terminalState.commandHistory.length === 0) {
+                addLine('(history kosong)', 'terminal-line');
+                return;
+            }
+            
+            terminalState.commandHistory.forEach((cmd, index) => {
+                addLine(`${terminalState.commandHistory.length - index}  ${cmd}`, 'terminal-line');
+            });
+        }
+
+        function handleDecode(args) {
+            if (args.length === 0) {
+                addLine('Usage: decode [string]', 'terminal-error');
+                return;
+            }
+            
+            try {
+                const decoded = atob(args[0]);
+                addLine(`Decoded: ${decoded}`, 'terminal-success');
+                
+                // Check if this is the key
+                if (args[0] === 'c3lhYWlrb28tZmluYWw=') {
+                    terminalState.completedChallenges.puzzle2 = true;
+                    updateUnlockProgress();
+                    showNotification('Anda telah berhasil mendekode kunci!', 'success');
+                }
+            } catch (e) {
+                addLine('Error: Invalid base64 string', 'terminal-error');
+            }
+        }
+
+        function handleUnlock(args) {
+            if (args.length < 2) {
+                addLine('Usage: unlock [file] [key]', 'terminal-error');
+                return;
+            }
+            
+            const filePath = resolvePath(args[0]);
+            const key = args[1];
+            
+            if (!terminalState.files[filePath]) {
+                addLine(`unlock: ${args[0]}: No such file or directory`, 'terminal-error');
+                return;
+            }
+            
+            if (!terminalState.files[filePath].locked) {
+                addLine(`unlock: ${args[0]}: File is not locked`, 'terminal-warning');
+                return;
+            }
+            
+            if (key === 'syaaikoo-final') {
+                terminalState.files[filePath].locked = false;
+                addLine(`File ${args[0]} has been unlocked successfully!`, 'terminal-success');
+                showNotification('File berhasil dibuka! Sekarang Anda dapat menjalankannya dengan perintah "run"', 'success');
+            } else {
+                addLine('Invalid key. File remains locked.', 'terminal-error');
+            }
+        }
+
+        function handleRun(args) {
+            if (args.length === 0) {
+                addLine('Usage: run [file]', 'terminal-error');
+                return;
+            }
+            
+            const filePath = resolvePath(args[0]);
+            const file = terminalState.files[filePath];
+            
+            if (!file) {
+                addLine(`run: ${args[0]}: No such file or directory`, 'terminal-error');
+                return;
+            }
+            
+            if (file.type !== 'file' || !file.executable) {
+                addLine(`run: ${args[0]}: Not an executable file`, 'terminal-error');
+                return;
+            }
+            
+            if (file.locked) {
+                addLine(`run: ${args[0]}: File is locked. Use 'unlock' command first.`, 'terminal-error');
+                return;
+            }
+            
+            // Handle specific executables
+            if (filePath.includes('contact.sh')) {
+                addLine('Menjalankan contact.sh...', 'terminal-info');
+                addLine('Menghubungkan ke WhatsApp...', 'terminal-line');
+                
+                setTimeout(() => {
+                    addLine('Redirecting...', 'terminal-success');
+                    
+                    setTimeout(() => {
+                        redirectToWhatsApp();
+                    }, 1000);
+                }, 1500);
+            } else if (filePath.includes('riddle.sh')) {
+                addLine('Menjalankan riddle.sh...', 'terminal-info');
+                addLine('Teka-teki:', 'terminal-line');
+                addLine('Aku selalu berlari tetapi tidak pernah berjalan,', 'terminal-line');
+                addLine('Aku sering bergumam tetapi tidak pernah berbicara,', 'terminal-line');
+                addLine('Aku memiliki tempat tidur tetapi tidak pernah tidur,', 'terminal-line');
+                addLine('Aku memiliki mulut tetapi tidak pernah makan.', 'terminal-line');
+                addLine('Apa aku?', 'terminal-line');
+                
+                showNotification('Gunakan perintah "answer riddle [jawaban]" untuk menjawab teka-teki', 'info');
+            } else if (filePath.includes('hangman.sh')) {
+                addLine('Menjalankan hangman.sh...', 'terminal-info');
+                addLine('Permainan Hangman', 'terminal-line');
+                addLine('Tebak kata: _ _ _ _ _ _ _ _', 'terminal-line');
+                addLine('Petunjuk: Ini adalah nama aplikasi pesan yang populer', 'terminal-line');
+                
+                showNotification('Gunakan perintah "answer hangman [jawaban]" untuk menjawab', 'info');
+            } else {
+                addLine(`Menjalankan ${args[0]}...`, 'terminal-info');
+                addLine('(Script executed successfully)', 'terminal-success');
+            }
+        }
+
+        function handleAnswer(args) {
+            if (args.length < 2) {
+                addLine('Usage: answer [question] [answer]', 'terminal-error');
+                return;
+            }
+            
+            const question = args[0].toLowerCase();
+            const answer = args.slice(1).join(' ').toLowerCase();
+            
+            switch (question) {
+                case 'riddle':
+                    if (answer === 'sungai') {
+                        addLine('Jawaban benar!', 'terminal-success');
+                        terminalState.completedChallenges.riddle = true;
+                        updateUnlockProgress();
+                        showNotification('Anda telah menyelesaikan teka-teki!', 'success');
+                    } else {
+                        addLine('Jawaban salah. Coba lagi.', 'terminal-error');
+                    }
+                    break;
+                case 'hangman':
+                    if (answer === 'whatsapp') {
+                        addLine('Jawaban benar!', 'terminal-success');
+                        terminalState.completedChallenges.hangman = true;
+                        updateUnlockProgress();
+                        showNotification('Anda telah menyelesaikan permainan hangman!', 'success');
+                    } else {
+                        addLine('Jawaban salah. Coba lagi.', 'terminal-error');
+                    }
+                    break;
+                case 'puzzle1':
+                    if (answer === 'pesan melalui whatsapp syaaikoo adalah aman') {
+                        addLine('Jawaban benar!', 'terminal-success');
+                        terminalState.completedChallenges.puzzle1 = true;
+                        updateUnlockProgress();
+                        showNotification('Anda telah menyelesaikan puzzle 1!', 'success');
+                    } else {
+                        addLine('Jawaban salah. Coba lagi.', 'terminal-error');
+                    }
+                    break;
+                case 'puzzle2':
+                    if (answer === 'base64 adalah metode encoding') {
+                        addLine('Jawaban benar!', 'terminal-success');
+                        terminalState.completedChallenges.puzzle2 = true;
+                        updateUnlockProgress();
+                        showNotification('Anda telah menyelesaikan puzzle 2!', 'success');
+                    } else {
+                        addLine('Jawaban salah. Coba lagi.', 'terminal-error');
+                    }
+                    break;
+                case 'puzzle3':
+                    if (answer === '.hidden' || answer === '~/.hidden') {
+                        addLine('Jawaban benar!', 'terminal-success');
+                        terminalState.completedChallenges.puzzle3 = true;
+                        updateUnlockProgress();
+                        showNotification('Anda telah menyelesaikan puzzle 3!', 'success');
+                    } else {
+                        addLine('Jawaban salah. Coba lagi.', 'terminal-error');
+                    }
+                    break;
+                default:
+                    addLine(`Tidak ada pertanyaan dengan nama "${question}"`, 'terminal-error');
+            }
+        }
+
+        function handleHint() {
+            if (!terminalState.completedChallenges.puzzle1) {
+                addLine('Hint: Baca file di direktori puzzles untuk menemukan tantangan pertama.', 'terminal-info');
+                return;
+            }
+            
+            if (!terminalState.completedChallenges.puzzle2) {
+                addLine('Hint: Gunakan perintah "decode" untuk mendekode string base64 di puzzle2.txt.', 'terminal-info');
+                return;
+            }
+            
+            if (!terminalState.completedChallenges.puzzle3) {
+                addLine('Hint: Cari file tersembunyi dengan perintah "ls -a" di direktori root.', 'terminal-info');
+                return;
+            }
+            
+            if (terminalState.files['~/contact.sh'].locked) {
+                addLine('Hint: Gunakan perintah "unlock contact.sh [kunci]" dengan kunci yang Anda temukan.', 'terminal-info');
+                return;
+            }
+            
+            addLine('Hint: Jalankan contact.sh dengan perintah "run contact.sh" untuk menghubungi syaaikoo.', 'terminal-info');
+        }
+
+        function handleProgress() {
+            addLine('Kemajuan tantangan:', 'terminal-info');
+            
+            const challenges = [
+                { name: 'Teka-teki', completed: terminalState.completedChallenges.riddle },
+                { name: 'Hangman', completed: terminalState.completedChallenges.hangman },
+                { name: 'Puzzle 1', completed: terminalState.completedChallenges.puzzle1 },
+                { name: 'Puzzle 2', completed: terminalState.completedChallenges.puzzle2 },
+                { name: 'Puzzle 3', completed: terminalState.completedChallenges.puzzle3 },
+                { name: 'Unlock contact.sh', completed: !terminalState.files['~/contact.sh'].locked }
+            ];
+            
+            challenges.forEach(challenge => {
+                const status = challenge.completed ? '✓' : '✗';
+                const statusClass = challenge.completed ? 'terminal-success' : 'terminal-error';
+                addLine(`${status} ${challenge.name}`, statusClass);
+            });
+            
+            // Show progress bar
+            const completedCount = Object.values(terminalState.completedChallenges).filter(Boolean).length;
+            const totalChallenges = Object.keys(terminalState.completedChallenges).length;
+            const progressPercent = (completedCount / totalChallenges) * 100;
+            
+            addLine(`<div class="progress-bar"><div class="progress-bar-fill" style="width: ${progressPercent}%"></div></div>`, 'terminal-line');
+            addLine(`Kemajuan: ${completedCount}/${totalChallenges} tantangan selesai`, 'terminal-info');
+            
+            if (!terminalState.files['~/contact.sh'].locked) {
+                addLine('Semua tantangan selesai! Jalankan "run contact.sh" untuk menghubungi syaaikoo.', 'terminal-success');
+            }
+        }
+
+        function handleContact() {
+            if (terminalState.files['~/contact.sh'].locked) {
+                addLine('Error: File contact.sh masih terkunci. Selesaikan tantangan terlebih dahulu.', 'terminal-error');
+                return;
+            }
+            
+            addLine('Menghubungkan ke WhatsApp...', 'terminal-info');
+            
+            setTimeout(() => {
+                redirectToWhatsApp();
+            }, 1500);
+        }
+
+        function handleExit() {
+            addLine('Menutup terminal...', 'terminal-info');
+            
+            setTimeout(() => {
+                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: var(--bg-color); color: var(--text-color); font-family: \'Fira Code\', monospace;"><div style="text-align: center;"><h1>Terminal ditutup</h1><p>Refresh halaman untuk memulai kembali.</p></div></div>';
+            }, 1000);
+        }
+
+        // Helper functions
+        function resolvePath(path) {
+            if (!path) return terminalState.currentDirectory;
+            
+            // Handle absolute paths
+            if (path.startsWith('/')) {
+                return path;
+            }
+            
+            // Handle home directory
+            if (path === '~' || path.startsWith('~/')) {
+                return path;
+            }
+            
+            // Handle parent directory
+            if (path === '..') {
+                const parts = terminalState.currentDirectory.split('/');
+                parts.pop();
+                return parts.join('/') || '~';
+            }
+            
+            // Handle current directory
+            if (path === '.') {
+                return terminalState.currentDirectory;
+            }
+            
+            // Handle relative paths
+            return `${terminalState.currentDirectory}/${path}`.replace(/\/+/g, '/');
+        }
+
+        function resolveDirectory(path) {
+            // Replace ~ with actual home directory path
+            return path.replace(/^~/, '~');
+        }
+
+        function getFilesInDirectory(directory) {
+            const dir = terminalState.files[directory];
+            if (!dir || dir.type !== 'directory') return [];
+            return dir.content;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'info') {
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        function updateUnlockProgress() {
+            const completedCount = Object.values(terminalState.completedChallenges).filter(Boolean).length;
+            terminalState.unlockProgress = completedCount;
+            
+            if (completedCount >= 3) {
+                showNotification('Anda telah menyelesaikan cukup tantangan untuk menemukan kunci!', 'success');
+            }
+        }
+
+        function redirectToWhatsApp() {
+            const decodedNumber = atob(encodedNumber);
+            window.location.href = `https://wa.me/${decodedNumber}`;
+        }
+
+        // Matrix effect
+        function setupMatrixEffect() {
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$+-*/=%"\'#&_(),.;:?!\\|{}<>[]^~';
+            const fontSize = 14;
+            const columns = Math.floor(canvas.width / fontSize);
+            
+            const drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.floor(Math.random() * -canvas.height);
+            }
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#0f0';
+                ctx.font = `${fontSize}px monospace`;
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const text = characters[Math.floor(Math.random() * characters.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    
+                    drops[i]++;
+                }
+                
+                requestAnimationFrame(draw);
+            }
+            
+            draw();
+            
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        // Prevent scrolling on mobile devices
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.className !== 'terminal-body') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showLoadingScreen();
+            setupMatrixEffect();
+        });
+
+        // Fallback untuk memastikan terminal tetap berjalan
+        window.addEventListener('load', function() {
+            // Jika loading screen masih terlihat setelah 3 detik, paksa untuk menghilangkannya
+            setTimeout(function() {
+                if (!loadingScreen.classList.contains('hidden')) {
+                    hideLoadingScreen();
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
